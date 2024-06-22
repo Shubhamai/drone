@@ -11,6 +11,18 @@ void TransmitterController::update(int yaw, int pitch, int roll, int throttle, i
     {
         printValues(elapsed, yaw, pitch, roll, throttle, fr, br, bl, fl);
         lastPrintTime = elapsed;
+
+        if (TRANSMITTER_SERIAL.available())
+        {
+            String input = TRANSMITTER_SERIAL.readStringUntil('\n');
+            if (input == "exit")
+            {
+                DEBUG_SERIAL.println("Exiting...");
+                TRANSMITTER_SERIAL.println("Exiting...");
+                while (true)
+                    ;
+            }
+        }
     }
 }
 

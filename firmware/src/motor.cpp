@@ -1,10 +1,13 @@
 #include "motor.h"
 #include "receiver.h"
 
+MotorController* MotorController::instance = nullptr;
+
 MotorController::MotorController(int frPin, int brPin, int blPin, int flPin)
     : frontRightPin(frPin), backRightPin(brPin), backLeftPin(blPin), frontLeftPin(flPin),
       frontRightThrust(MIN_THROTTLE), backRightThrust(MIN_THROTTLE),
-      backLeftThrust(MIN_THROTTLE), frontLeftThrust(MIN_THROTTLE) {}
+      backLeftThrust(MIN_THROTTLE), frontLeftThrust(MIN_THROTTLE),
+      lastThrustUpdateTime(0), isInitialized(false) {}
 
 void MotorController::initialize()
 {
@@ -13,23 +16,44 @@ void MotorController::initialize()
     pinMode(backLeftPin, OUTPUT);
     pinMode(frontLeftPin, OUTPUT);
 
-    writeThrust(frontRightPin, MIN_THROTTLE);
-    writeThrust(backRightPin, MIN_THROTTLE);
-    writeThrust(backLeftPin, MIN_THROTTLE);
-    writeThrust(frontLeftPin, MIN_THROTTLE);
+    // Set all motors to MIN_THROTTLE without calling writeThrust
+    analogWrite(frontRightPin, map(MIN_THROTTLE, 1000, 2000, 0, 180));
+    analogWrite(backRightPin, map(MIN_THROTTLE, 1000, 2000, 0, 180));
+    analogWrite(backLeftPin, map(MIN_THROTTLE, 1000, 2000, 0, 180));
+    analogWrite(frontLeftPin, map(MIN_THROTTLE, 1000, 2000, 0, 180));
+
+    lastThrustUpdateTime = micros();
+    isInitialized = true;
 }
 
 void MotorController::writeThrust(int pin, int thrust)
 {
+    if (!isInitialized)
+    {
+        return; // Don't write thrust if not initialized
+    }
+
     if (DISABLE_MOTORS || thrust < MIN_THROTTLE || thrust > MAX_THROTTLE)
     {
         thrust = MIN_THROTTLE;
+    }
+    else
+    {
+        lastThrustUpdateTime = micros();
     }
 
     // Map thrust from 1000-2000 to 0-180 for analogWrite
     int mappedThrust = map(thrust, 1000, 2000, 0, 180);
 
     analogWrite(pin, mappedThrust);
+}
+
+void MotorController::checkAndDisableMotors()
+{
+    if (isInitialized && micros() - lastThrustUpdateTime > THRUST_TIMEOUT)
+    {
+        disableMotors();
+    }
 }
 
 bool MotorController::setThrust(int motor, int thrust)
@@ -81,8 +105,6 @@ int MotorController::getThrust(int motor) const
     }
 }
 
-// New function implementations
-
 bool MotorController::setAllThrust(int frThrust, int brThrust, int blThrust, int flThrust)
 {
     if (frThrust < MIN_THROTTLE || frThrust > MAX_THROTTLE ||
@@ -129,5 +151,20 @@ void MotorController::enableMotors(ReceiverController &receiver)
     if (receiver.isThrottleZero())
     {
         DISABLE_MOTORS = false;
+    }
+}
+
+void MotorController::setupTimer()
+{
+    instance = this;
+    Timer1.initialize(THRUST_TIMEOUT);
+    Timer1.attachInterrupt(MotorController::checkMotorsWrapper);
+}
+
+void MotorController::checkMotorsWrapper()
+{
+    if (instance)
+    {
+        instance->checkAndDisableMotors();
     }
 }

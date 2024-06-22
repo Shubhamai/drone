@@ -28,6 +28,10 @@ void setup(void)
     Wire.begin();
     Wire.setClock(I2C_CLOCK_SPEED);
 
+    motors.initialize();
+    motors.disableMotors();
+    motors.setupTimer();
+
     // Wait for serial monitor to open
     while (!DEBUG_SERIAL)
     {
@@ -38,7 +42,6 @@ void setup(void)
     }
     DEBUG_SERIAL.println("Starting Drone...");
 
-    motors.initialize();
     state.initialize();
     receiver.initialize(); // Initialize interrupts for receiving RC signals
 
@@ -63,7 +66,7 @@ void loop()
     bool isReceivedEnabled = receiver.update();
     if (!isReceivedEnabled)
     {
-        // DEBUG_SERIAL.println("Receiver not enabled");
+        DEBUG_SERIAL.println("Receiver not enabled");
         motors.disableMotors();
         return;
     }
@@ -82,7 +85,7 @@ void loop()
     int fr, br, bl, fl;
     motors.getAllThrust(fr, br, bl, fl);
 
-    transmitter.update(0, 0, 0, throttle, fr, br, bl, fl);
+    transmitter.update(filterData.yaw, filterData.pitch, filterData.roll, throttle, fr, br, bl, fl);
 
     //////////////////////////////////////////////////
 
