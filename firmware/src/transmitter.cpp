@@ -3,16 +3,19 @@
 
 TransmitterController::TransmitterController() : lastPrintTime(0) {}
 
-void TransmitterController::update(int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl) {
+void TransmitterController::update(int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl)
+{
     unsigned long elapsed = millis();
 
-    if (elapsed - lastPrintTime >= printInterval) {
+    if (elapsed - lastPrintTime >= printInterval)
+    {
         printValues(elapsed, yaw, pitch, roll, throttle, fr, br, bl, fl);
         lastPrintTime = elapsed;
     }
 }
 
-void TransmitterController::printValues(unsigned long elapsed, int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl) {
+void TransmitterController::printValues(unsigned long elapsed, int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl)
+{
     TRANSMITTER_SERIAL.print("Elapsed: ");
     TRANSMITTER_SERIAL.print(elapsed);
     TRANSMITTER_SERIAL.print(" ms, Yaw: ");

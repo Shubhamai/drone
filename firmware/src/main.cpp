@@ -23,6 +23,8 @@ FilterManager filterManager;
 void setup(void)
 {
     DEBUG_SERIAL.begin(SERIAL_BAUD_RATE);
+    TRANSMITTER_SERIAL.begin(SERIAL_BAUD_RATE);
+    
     Wire.begin();
     Wire.setClock(I2C_CLOCK_SPEED);
 
@@ -76,17 +78,15 @@ void loop()
     IMUData imu_data = imuManager.readIMU();
     FilterData filterData = filterManager.processData(imu_data);
 
-    // motors.setThrust(1, throttle);
-
     motors.setAllThrust(throttle, throttle, throttle, throttle);
-    // int fr, br, bl, fl;
-    // motors.getAllThrust(fr, br, bl, fl);
+    int fr, br, bl, fl;
+    motors.getAllThrust(fr, br, bl, fl);
 
-    // transmitter.update(0,0, 0, throttle, fr, br, bl, fl);
+    transmitter.update(0, 0, 0, throttle, fr, br, bl, fl);
 
     //////////////////////////////////////////////////
 
     const uint32_t end_loop = millis();
-    // DEBUG_SERIAL.print("Loop time: ");
-    // DEBUG_SERIAL.println(end_loop - start_loop);
+    DEBUG_SERIAL.print("Loop time: ");
+    DEBUG_SERIAL.println(end_loop - start_loop);
 }
