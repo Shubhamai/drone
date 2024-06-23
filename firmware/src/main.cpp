@@ -25,8 +25,8 @@ FilterManager filterManager;
 void setup(void)
 {
     DEBUG_SERIAL.begin(SERIAL_BAUD_RATE);
-    TRANSMITTER_SERIAL.begin(SERIAL_BAUD_RATE);
-    
+    TRANSMITTER_SERIAL.begin(1000000);
+
     Wire.begin();
     Wire.setClock(I2C_CLOCK_SPEED);
 
@@ -60,6 +60,7 @@ void setup(void)
     DEBUG_SERIAL.println("Throttle is zero. Ready to fly!");
 }
 
+elapsedMillis elapsedTime;
 void loop()
 {
     uint32_t start_loop = millis();
@@ -77,33 +78,48 @@ void loop()
         motors.enableMotors(receiver);
     }
 
-    int throttle = receiver.getThrottle();
-    // int pitch = receiver.getPitch();
-    // int roll = receiver.getRoll();
-    // int yaw = receiver.getYaw();
+    int RCthrottle = receiver.getThrottle();
+    int RCpitch = receiver.getPitch();
+    int RCyaw = receiver.getYaw();
+    int RCroll = receiver.getRoll();
 
-    DEBUG_SERIAL.print("Throttle: ");
-    DEBUG_SERIAL.println(throttle);
-    // DEBUG_SERIAL.print(" Pitch: ");
-    // DEBUG_SERIAL.print(pitch);
-    // DEBUG_SERIAL.print(" Roll: ");
-    // DEBUG_SERIAL.print(roll);
-    // DEBUG_SERIAL.print(" Yaw: ");
-    // DEBUG_SERIAL.println(yaw);
-
-    BaroData baro_data = barometer.readBaroData();
     IMUData imu_data = imuManager.readIMU();
+    BaroData baro_data = barometer.readBaroData();
     FilterData filterData = filterManager.processData(imu_data);
 
-    motors.setAllThrust(throttle, throttle, throttle, throttle);
+    motors.setAllThrust(RCthrottle, RCthrottle, RCthrottle, RCthrottle);
     int fr, br, bl, fl;
     motors.getAllThrust(fr, br, bl, fl);
 
-    transmitter.update(filterData.yaw, filterData.pitch, filterData.roll, throttle, fr, br, bl, fl);
+    TransmitterData data;
+    data.elapsedTime = elapsedTime;
+    data.accX = imu_data.accel.acceleration.x;
+    data.accY = imu_data.accel.acceleration.y;
+    data.accZ = imu_data.accel.acceleration.z;
+    data.gyroX = imu_data.gyro.gyro.x * SENSORS_RADS_TO_DPS;
+    data.gyroY = imu_data.gyro.gyro.y * SENSORS_RADS_TO_DPS;
+    data.gyroZ = imu_data.gyro.gyro.z * SENSORS_RADS_TO_DPS;
+    data.magX = imu_data.mag.magnetic.x;
+    data.magY = imu_data.mag.magnetic.y;
+    data.magZ = imu_data.mag.magnetic.z;
+    data.altitude = baro_data.altitude;
+    data.temp = baro_data.temperature;
+    data.yaw = filterData.yaw;
+    data.pitch = filterData.pitch;
+    data.roll = filterData.roll;
+    data.rcThrottle = RCthrottle;
+    data.rcYaw = RCyaw;
+    data.rcPitch = RCpitch;
+    data.rcRoll = RCroll;
+    data.frontRight = fr;
+    data.backRight = br;
+    data.backLeft = bl;
+    data.frontLeft = fl;
+    transmitter.update(data);
 
     //////////////////////////////////////////////////
 
     const uint32_t end_loop = millis();
-    // DEBUG_SERIAL.print("Loop time: ");
-    // DEBUG_SERIAL.println(end_loop - start_loop);
+    DEBUG_SERIAL.print("Loop time: ");
+    DEBUG_SERIAL.println(end_loop - start_loop);
 }

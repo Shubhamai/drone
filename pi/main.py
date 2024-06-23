@@ -48,7 +48,7 @@ def aruco_detection():
 # WebSocket server
 async def websocket_server(websocket, path):
     try:
-        with serial.Serial("/dev/ttyS0", 115200) as ser:
+        with serial.Serial("/dev/ttyS0", 1000000) as ser:
             while True:
                 start_time = time.time()
                 # Read from serial

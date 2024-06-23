@@ -2,6 +2,7 @@ use crate::data::ReceivedData;
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 
+#[derive( Clone)]
 pub struct DroneView {
     open: bool,
 }
@@ -28,20 +29,26 @@ impl DroneView {
 
     pub fn window(&mut self, ctx: &egui::Context, received_data: &Arc<Mutex<ReceivedData>>) {
         egui::Window::new("Drone View")
-            .open(&mut self.open)
+            // .open(&mut self.open)
             .default_size([400.0, 400.0])
             .resizable(true)
             .show(ctx, |ui| {
                 let data = received_data.lock().unwrap();
 
-                let parts: Vec<&str> = data.serial_data.split(',').collect();
+                // let parts: Vec<&str> = data.serial_data.split(',').collect();
 
-                let motor_thrusts: Vec<f32> = parts
-                    .iter()
-                    .skip(5)
-                    .take(8)
-                    .filter_map(|&s| s.parse().ok())
-                    .collect();
+                // let motor_thrusts: Vec<f32> = parts
+                //     .iter()
+                //     .skip(5)
+                //     .take(8)
+                //     .filter_map(|&s| s.parse().ok())
+                //     .collect();
+                let motor_thrusts = vec![
+                    data.serial_data.front_right as f32,
+                    data.serial_data.back_right as f32,
+                    data.serial_data.back_left as f32,
+                    data.serial_data.front_left as f32,
+                ];
 
                 // Draw drone
                 let available_size = ui.available_size();

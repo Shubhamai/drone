@@ -35,7 +35,7 @@ FilterData FilterManager::processData(IMUData data) {
     float qw, qx, qy, qz;
     filter.getQuaternion(&qw, &qx, &qy, &qz);
 
-    // Note: The IMU is mounted sideways, so roll and pitch are swapped
+    // NOTE: The IMU is mounted sideways, so roll and pitch are swapped
     filteredData.roll = pitch;
     filteredData.pitch = roll;
     filteredData.yaw = heading;

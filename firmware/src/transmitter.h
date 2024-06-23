@@ -3,16 +3,52 @@
 
 #include <Arduino.h>
 
-class TransmitterController {
+ struct TransmitterData
+{
+    float elapsedTime;
+
+    float accX;
+    float accY;
+    float accZ;
+
+    float gyroX;
+    float gyroY;
+    float gyroZ;
+
+    float magX;
+    float magY;
+    float magZ;
+
+    float altitude;
+
+    float temp;
+
+    int32_t yaw;
+    int32_t pitch;
+    int32_t roll;
+
+    int32_t rcThrottle;
+    int32_t rcYaw;
+    int32_t rcPitch;
+    int32_t rcRoll;
+
+    int32_t frontRight;
+    int32_t backRight;
+    int32_t backLeft;
+    int32_t frontLeft;
+};
+
+class TransmitterController
+{
 private:
     unsigned long lastPrintTime;
-    const unsigned long printInterval = 1; // Print every 100ms
+    const unsigned long printInterval = 20; // Print every 100ms
 
 public:
     TransmitterController();
-    
-    void update(int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl);
-    void printValues(unsigned long elapsed, int yaw, int pitch, int roll, int throttle, int fr, int br, int bl, int fl);
+
+    void update(TransmitterData data);
+    void sendValues(TransmitterData data);
 };
 
 #endif

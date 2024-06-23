@@ -1,6 +1,6 @@
 #include "receiver.h"
 
-ReceiverController *instance;
+ReceiverController *ReceiverController::instance = nullptr;
 
 ReceiverController::ReceiverController(int throttlePin, int rollPin, int pitchPin, int yawPin)
 {
@@ -13,12 +13,11 @@ ReceiverController::ReceiverController(int throttlePin, int rollPin, int pitchPi
     {
         pinMode(pins[i], INPUT);
         values[i] = MIN_PULSE;
-        newPulseAvailable[i] = false;
         pulseStartTime[i] = 0;
     }
 
     isInitialized = false;
-    instance = this; // Set this instance for static handler access
+    instance = this;
 
     // Initialize throttle history
     for (int i = 0; i < THROTTLE_HISTORY_SIZE; i++)
@@ -31,26 +30,27 @@ ReceiverController::ReceiverController(int throttlePin, int rollPin, int pitchPi
 
 void ReceiverController::initialize()
 {
-    for (int i = 0; i < CHANNEL_COUNT; i++)
-    {
-        attachInterrupt(digitalPinToInterrupt(pins[i]), pinInterruptHandler, CHANGE);
-    }
+    attachInterrupt(digitalPinToInterrupt(pins[0]), throttleInterruptHandler, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pins[1]), rollInterruptHandler, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pins[2]), pitchInterruptHandler, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pins[3]), yawInterruptHandler, CHANGE);
 }
 
-void ReceiverController::pinInterruptHandler()
+void ReceiverController::throttleInterruptHandler() { instance->handleInterrupt(0); }
+void ReceiverController::rollInterruptHandler() { instance->handleInterrupt(1); }
+void ReceiverController::pitchInterruptHandler() { instance->handleInterrupt(2); }
+void ReceiverController::yawInterruptHandler() { instance->handleInterrupt(3); }
+
+void ReceiverController::handleInterrupt(int channel)
 {
-    for (int i = 0; i < CHANNEL_COUNT; i++)
+    if (digitalRead(instance->pins[channel]) == HIGH)
     {
-        if (digitalRead(instance->pins[i]) == HIGH)
-        {
-            instance->pulseStartTime[i] = micros();
-        }
-        else
-        {
-            unsigned long duration = micros() - instance->pulseStartTime[i];
-            instance->values[i] = instance->constrainPulse(duration);
-            instance->newPulseAvailable[i] = true;
-        }
+        instance->pulseStartTime[channel] = micros();
+    }
+    else
+    {
+        unsigned long duration = micros() - instance->pulseStartTime[channel];
+        instance->values[channel] = instance->constrainPulse(duration);
     }
 }
 
@@ -102,17 +102,17 @@ int ReceiverController::getThrottle()
 
 int ReceiverController::getRoll()
 {
-    return values[1];
+    return map(isInitialized ? values[1] : MIN_PULSE, 1035, 1810, 1000, 2000);
 }
 
 int ReceiverController::getPitch()
 {
-    return values[2];
+    return map(isInitialized ? values[2] : MIN_PULSE, 1100, 1750, 1000, 2000);
 }
 
 int ReceiverController::getYaw()
 {
-    return values[3];
+    return map(isInitialized ? values[3] : MIN_PULSE, 1035, 1810, 1000, 2000);
 }
 
 int ReceiverController::constrainPulse(int pulse)

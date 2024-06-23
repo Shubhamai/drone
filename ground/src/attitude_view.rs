@@ -3,6 +3,7 @@ use eframe::egui;
 use nalgebra as na;
 use std::sync::{Arc, Mutex};
 
+#[derive( Clone)]
 pub struct AttitudeView {
     open: bool,
 }
@@ -29,42 +30,46 @@ impl AttitudeView {
 
     pub fn window(&mut self, ctx: &egui::Context, received_data: &Arc<Mutex<ReceivedData>>) {
         egui::Window::new("Drone Attitude")
-            .open(&mut self.open)
+            // .open(&mut self.open)
             .resizable(true)
             .show(ctx, |ui| {
                 let data = received_data.lock().unwrap();
-                let parts: Vec<&str> = data.serial_data.split(',').collect();
+                // let parts: Vec<&str> = data.serial_data.split(',').collect();
 
                 // Assuming the last three values in serial_data are yaw, pitch, roll in degrees
-                let yaw = parts
-                    .get(1)
-                    .and_then(|s| s.parse::<f32>().ok())
-                    .unwrap_or(0.0);
-                let pitch = parts
-                    .get(2)
-                    .and_then(|s| s.parse::<f32>().ok())
-                    .unwrap_or(0.0);
-                let roll = parts
-                    .get(3)
-                    .and_then(|s| s.parse::<f32>().ok())
-                    .unwrap_or(0.0);
+                // let yaw = parts
+                //     .get(1)
+                //     .and_then(|s| s.parse::<f32>().ok())
+                //     .unwrap_or(0.0);
+                // let pitch = parts
+                //     .get(2)
+                //     .and_then(|s| s.parse::<f32>().ok())
+                //     .unwrap_or(0.0);
+                // let roll = parts
+                //     .get(3)
+                //     .and_then(|s| s.parse::<f32>().ok())
+                //     .unwrap_or(0.0);
 
-                ui.heading("Drone Attitude");
+                let yaw = data.serial_data.yaw as f32;
+                let pitch = data.serial_data.pitch as f32;
+                let roll = data.serial_data.roll as f32;
+
+                // ui.heading("Drone Attitude");
                 // ui.add_space(10.0);
 
-                ui.horizontal(|ui| {
-                    ui.label("Yaw:");
-                    ui.label(format!("{:.2}°", yaw));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Pitch:");
-                    ui.label(format!("{:.2}°", pitch));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Roll:");
-                    ui.label(format!("{:.2}°", roll));
-                });
-                ui.add_space(10.0);
+                // ui.horizontal(|ui| {
+                //     ui.label("Yaw:");
+                //     ui.label(format!("{:.2}°", yaw));
+                // });
+                // ui.horizontal(|ui| {
+                //     ui.label("Pitch:");
+                //     ui.label(format!("{:.2}°", pitch));
+                // });
+                // ui.horizontal(|ui| {
+                //     ui.label("Roll:");
+                //     ui.label(format!("{:.2}°", roll));
+                // });
+                // ui.add_space(10.0);
 
                 // Use available width for the drone visualization
                 let available_size = ui.available_size();
@@ -156,7 +161,8 @@ fn draw_sci_fi_drone(ui: &mut egui::Ui, yaw: f32, pitch: f32, roll: f32) -> egui
         // egui::Pos2::new(center.x + label_offset, center.y),
         projected_points[0],
         egui::Align2::LEFT_CENTER,
-        "Roll",
+        // "Roll",
+        format!("Roll {:.2}°", roll.to_degrees()),
         egui::FontId::proportional(14.0),
         egui::Color32::WHITE,
     );
@@ -164,14 +170,16 @@ fn draw_sci_fi_drone(ui: &mut egui::Ui, yaw: f32, pitch: f32, roll: f32) -> egui
         // egui::Pos2::new(center.x, center.y + label_offset),
         projected_points[2],
         egui::Align2::CENTER_TOP,
-        "Pitch",
+        // "Pitch",
+        format!("Pitch {:.2}°", pitch.to_degrees()),
         egui::FontId::proportional(14.0),
         egui::Color32::WHITE,
     );
     painter.text(
         projected_points[4],
         egui::Align2::CENTER_BOTTOM,
-        "Yaw",
+        // "Yaw",
+        format!("Yaw {:.2}°", yaw.to_degrees()),
         egui::FontId::proportional(14.0),
         egui::Color32::WHITE,
     );

@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 const CHART_HISTORY: usize = 10000;
 
+#[derive(Clone)]
 pub struct AccelerometerView {
     open: bool,
     accel_x: AllocRingBuffer<(f64, f64)>,
@@ -38,25 +39,17 @@ impl AccelerometerView {
 
     pub fn window(&mut self, ctx: &egui::Context, received_data: &Arc<Mutex<ReceivedData>>) {
         egui::Window::new("Accelerometer Data")
-            .open(&mut self.open)
+            // .open(&mut self.open)
             .default_size([600.0, 400.0])
             .resizable(true)
             .show(ctx, |ui| {
                 let data = received_data.lock().unwrap();
 
-                let parts: Vec<&str> = data.serial_data.split(',').collect();
+                let elapsed = data.serial_data.elapsed_time as f64 / 1000.0;
 
-                let elapsed = parts[0].parse::<f64>().unwrap_or(0.0) / 1000.0;
-
-                if let (Ok(x), Ok(y), Ok(z)) = (
-                    parts[3].parse::<f64>(),
-                    parts[4].parse::<f64>(),
-                    parts[5].parse::<f64>(),
-                ) {
-                    self.accel_x.push((elapsed, x));
-                    self.accel_y.push((elapsed, y));
-                    self.accel_z.push((elapsed, z));
-                }
+                self.accel_x.push((elapsed, data.serial_data.acc_x as f64));
+                self.accel_y.push((elapsed, data.serial_data.acc_y as f64));
+                self.accel_z.push((elapsed, data.serial_data.acc_z as f64));
 
                 Plot::new("accelerometer_plot")
                     .view_aspect(2.0)
@@ -64,7 +57,7 @@ impl AccelerometerView {
                     .y_axis_label("Acceleration (m/s²)")
                     .legend(egui_plot::Legend::default())
                     .show(ui, |plot_ui| {
-                        const Y_AXIS_RANGE: f64 = 2000.0;
+                        const Y_AXIS_RANGE: f64 = 20.0;
 
                         let time_range = 10.0; // Show last 10 seconds of data
                         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
