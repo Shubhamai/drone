@@ -6,7 +6,7 @@
 class TransmitterController {
 private:
     unsigned long lastPrintTime;
-    const unsigned long printInterval = 100; // Print every 100ms
+    const unsigned long printInterval = 1; // Print every 100ms
 
 public:
     TransmitterController();

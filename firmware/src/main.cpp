@@ -13,7 +13,9 @@
 MotorController motors(FRONT_RIGHT_MOTOR_PIN, BACK_RIGHT_MOTOR_PIN,
                        BACK_LEFT_MOTOR_PIN, FRONT_LEFT_MOTOR_PIN);
 StateController state;
-ReceiverController receiver(RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_1_THROTTLE_PIN);
+ReceiverController receiver(RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_4_ROLL_PIN,
+                            RC_CHANNEL_3_PITCH_PIN, RC_CHANNEL_2_YAW_PIN);
+
 TransmitterController transmitter;
 
 Barometer barometer;
@@ -76,6 +78,18 @@ void loop()
     }
 
     int throttle = receiver.getThrottle();
+    // int pitch = receiver.getPitch();
+    // int roll = receiver.getRoll();
+    // int yaw = receiver.getYaw();
+
+    DEBUG_SERIAL.print("Throttle: ");
+    DEBUG_SERIAL.println(throttle);
+    // DEBUG_SERIAL.print(" Pitch: ");
+    // DEBUG_SERIAL.print(pitch);
+    // DEBUG_SERIAL.print(" Roll: ");
+    // DEBUG_SERIAL.print(roll);
+    // DEBUG_SERIAL.print(" Yaw: ");
+    // DEBUG_SERIAL.println(yaw);
 
     BaroData baro_data = barometer.readBaroData();
     IMUData imu_data = imuManager.readIMU();
@@ -90,6 +104,6 @@ void loop()
     //////////////////////////////////////////////////
 
     const uint32_t end_loop = millis();
-    DEBUG_SERIAL.print("Loop time: ");
-    DEBUG_SERIAL.println(end_loop - start_loop);
+    // DEBUG_SERIAL.print("Loop time: ");
+    // DEBUG_SERIAL.println(end_loop - start_loop);
 }

@@ -18,9 +18,9 @@ const int GREEN_LED_PIN = 36;
 const int BLUE_LED_PIN = 37;
 
 const int RC_CHANNEL_1_THROTTLE_PIN = 12;
-// const int RC_CHANNEL_2_YAW_PIN = 11;
-// const int RC_CHANNEL_3_PITCH_PIN = 12;
-// const int RC_CHANNEL_4_ROLL_PIN = 13;
+const int RC_CHANNEL_2_YAW_PIN = 11;
+const int RC_CHANNEL_3_PITCH_PIN = 10;
+const int RC_CHANNEL_4_ROLL_PIN = 9;
 
 const int MIN_THROTTLE = 1000;
 const int MAX_THROTTLE = 1400;
