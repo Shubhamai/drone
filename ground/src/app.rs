@@ -1,10 +1,12 @@
 use crate::accelerometer_view::AccelerometerView;
 use crate::attitude_view::AttitudeView;
 use crate::chat_view::ChatView;
+use crate::commands_view::CommandsView;
 use crate::data::ReceivedData;
 use crate::drone_view::DroneView;
 use crate::rc_view::RCView;
 use chrono::Local;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -17,6 +19,7 @@ pub struct MyApp {
     accelerometer_view: AccelerometerView,
     rc_view: RCView,
     pub chat_view: ChatView,
+    commands_view: CommandsView,
     received_data: Arc<Mutex<ReceivedData>>,
     start_time: Instant,
     last_received_time: Arc<Mutex<Instant>>,
@@ -39,16 +42,34 @@ enum WindowType {
     Accelerometer,
     RC,
     Chat,
+    Commands,
 }
 
 impl MyApp {
-    pub fn new(received_data: Arc<Mutex<ReceivedData>>) -> Self {
+    pub fn new(
+        received_data: Arc<Mutex<ReceivedData>>,
+        ui_to_drone_tx: Sender<String>,
+        ui_to_drone_rx: Receiver<String>,
+        drone_to_ui_tx: Sender<String>,
+        drone_to_ui_rx: Receiver<String>,
+    ) -> Self {
         Self {
             drone_view: DroneView::default(),
             attitude_view: AttitudeView::default(),
             accelerometer_view: AccelerometerView::new(),
             rc_view: RCView::default(),
-            chat_view: ChatView::default(),
+            chat_view: ChatView::new(
+                ui_to_drone_tx.clone(),
+                ui_to_drone_rx.clone(),
+                drone_to_ui_tx.clone(),
+                drone_to_ui_rx.clone(),
+            ),
+            commands_view: CommandsView::new(
+                ui_to_drone_tx,
+                ui_to_drone_rx,
+                drone_to_ui_tx,
+                drone_to_ui_rx,
+            ),
             received_data,
             start_time: Instant::now(),
             last_received_time: Arc::new(Mutex::new(Instant::now())),
@@ -174,6 +195,11 @@ impl eframe::App for MyApp {
                 if ui.button("Add Chat").clicked() {
                     self.tabs[self.active_tab].windows.push(WindowType::Chat);
                 }
+                if ui.button("Add Commands").clicked() {
+                    self.tabs[self.active_tab]
+                        .windows
+                        .push(WindowType::Commands);
+                }
             });
         });
 
@@ -187,6 +213,7 @@ impl eframe::App for MyApp {
                     }
                     WindowType::RC => self.rc_view.window(ctx, &self.received_data),
                     WindowType::Chat => self.chat_view.window(ctx, &self.received_data),
+                    WindowType::Commands => self.commands_view.window(ctx, &self.received_data),
                 }
             }
         });

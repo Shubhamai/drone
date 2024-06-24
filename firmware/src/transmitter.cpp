@@ -16,10 +16,10 @@ void TransmitterController::update(TransmitterData data)
         if (TRANSMITTER_SERIAL.available())
         {
             String input = TRANSMITTER_SERIAL.readStringUntil('\n');
-            if (input == "exit")
+            if (input == "abort")
             {
-                DEBUG_SERIAL.println("Exiting...");
-                TRANSMITTER_SERIAL.println("Exiting...");
+                DEBUG_SERIAL.println("Aborting...");
+                TRANSMITTER_SERIAL.println("Aborting...");
                 while (true)
                     ;
             }
@@ -62,4 +62,4 @@ void TransmitterController::sendValues(TransmitterData data)
     String jsonString;
     serializeJson(doc, jsonString);
     TRANSMITTER_SERIAL.println(jsonString);
-}
+}   

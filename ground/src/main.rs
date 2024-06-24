@@ -2,11 +2,13 @@ mod accelerometer_view;
 mod app;
 mod attitude_view;
 mod chat_view;
+mod commands_view;
 mod data;
 mod drone_view;
 mod rc_view;
 
 use app::MyApp;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use data::{ReceivedData, SerialData};
 use eframe::egui;
 use serde_json::Value;
@@ -24,7 +26,16 @@ fn main() -> Result<(), eframe::Error> {
     let received_data = Arc::new(Mutex::new(ReceivedData::default()));
     let received_data_clone = Arc::clone(&received_data);
 
-    let app = Arc::new(Mutex::new(MyApp::new(Arc::clone(&received_data))));
+    let (ui_to_drone_tx, ui_to_drone_rx) = unbounded();
+    let (drone_to_ui_tx, drone_to_ui_rx) = unbounded();
+
+    let app = Arc::new(Mutex::new(MyApp::new(
+        Arc::clone(&received_data),
+        ui_to_drone_tx,
+        ui_to_drone_rx,
+        drone_to_ui_tx,
+        drone_to_ui_rx,
+    )));
     let app_clone = Arc::clone(&app);
     let drone_to_ui_sender = app.lock().unwrap().chat_view.drone_to_ui_tx.clone();
     let ui_to_drone_receiver = app.lock().unwrap().chat_view.ui_to_drone_rx.clone();
