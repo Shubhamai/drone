@@ -114,17 +114,22 @@ impl eframe::App for MyApp {
                 ));
 
                 let connected = last_packet_elapsed < Duration::from_millis(500);
-                ui.label(format!(
-                    "Drone Status: {}",
+                ui.colored_label(
+                    if connected {
+                        egui::Color32::GREEN
+                    } else {
+                        egui::Color32::RED
+                    },
                     if connected {
                         "Connected"
                     } else {
                         "Disconnected"
-                    }
-                ));
-                // .style(egui::Style::default().text_color(if connected { egui::Color32::GREEN } else { egui::Color32::RED }));
+                    },
+                );
 
-                ui.label(format!("Connection Attempts: {}", self.connection_attempts));
+                if !connected {
+                    ui.label(format!("Connection Attempts: {}", self.connection_attempts));
+                }
             });
         });
 
@@ -173,7 +178,6 @@ impl eframe::App for MyApp {
         });
 
         egui::CentralPanel::default().show(ctx, |_ui| {
-
             for window in &self.tabs[self.active_tab].windows {
                 match window {
                     WindowType::Drone => self.drone_view.window(ctx, &self.received_data),

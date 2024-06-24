@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
- struct TransmitterData
+struct TransmitterData
 {
     float elapsedTime;
 

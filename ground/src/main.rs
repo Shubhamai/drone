@@ -13,7 +13,7 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use tungstenite::connect;
+use tungstenite::{connect, Message};
 
 const WEBSOCKET_URL: &str = "ws://192.168.1.107:8765";
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(5);
@@ -26,7 +26,8 @@ fn main() -> Result<(), eframe::Error> {
 
     let app = Arc::new(Mutex::new(MyApp::new(Arc::clone(&received_data))));
     let app_clone = Arc::clone(&app);
-    let chat_sender = app.lock().unwrap().chat_view.get_sender();
+    let drone_to_ui_sender = app.lock().unwrap().chat_view.drone_to_ui_tx.clone();
+    let ui_to_drone_receiver = app.lock().unwrap().chat_view.ui_to_drone_rx.clone();
 
     thread::spawn(move || {
         loop {
@@ -63,10 +64,24 @@ fn main() -> Result<(), eframe::Error> {
                                         let mut data = received_data_clone.lock().unwrap();
                                         data.serial_data = serial_data;
                                     } else {
-                                        // If it's not SerialData, treat it as a chat message
-                                        chat_sender
-                                            .send(serial_data_str.to_string())
-                                            .expect("Failed to send chat message");
+                                        // If it's not SerialData, treat it as a chat message, if it does not have `":`
+
+                                        if !serial_data_str.contains(":") {
+                                            drone_to_ui_sender
+                                                .send(serial_data_str.to_string())
+                                                .expect("Failed to send chat message");
+                                        }
+                                    }
+                                }
+
+                                if let Ok(ui_message) = ui_to_drone_receiver.try_recv() {
+                                    if socket.can_write() {
+                                        match socket.send(Message::Text(ui_message)) {
+                                            Ok(_) => {}
+                                            Err(e) => println!("Failed to send message: {:?}", e),
+                                        }
+                                    } else {
+                                        println!("Socket is not ready for writing");
                                     }
                                 }
                             }

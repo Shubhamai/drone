@@ -8,8 +8,10 @@ pub struct ChatView {
     open: bool,
     input: String,
     messages: Vec<ChatMessage>,
-    tx: Sender<String>,
-    rx: Receiver<String>,
+    pub ui_to_drone_tx: Sender<String>,
+    pub ui_to_drone_rx: Receiver<String>,
+    pub drone_to_ui_tx: Sender<String>,
+    pub drone_to_ui_rx: Receiver<String>,
 }
 
 #[derive(Clone)]
@@ -20,13 +22,16 @@ struct ChatMessage {
 
 impl Default for ChatView {
     fn default() -> Self {
-        let (tx, rx) = unbounded();
+        let (ui_to_drone_tx, ui_to_drone_rx) = unbounded();
+        let (drone_to_ui_tx, drone_to_ui_rx) = unbounded();
         Self {
             open: false,
             input: String::new(),
             messages: Vec::new(),
-            tx,
-            rx,
+            ui_to_drone_tx,
+            ui_to_drone_rx,
+            drone_to_ui_tx,
+            drone_to_ui_rx,
         }
     }
 }
@@ -48,7 +53,7 @@ impl ChatView {
             .default_size([400.0, 600.0])
             .show(ctx, |ui| {
                 // Check for new messages from the WebSocket
-                while let Ok(message) = self.rx.try_recv() {
+                while let Ok(message) = self.drone_to_ui_rx.try_recv() {
                     self.messages.push(ChatMessage {
                         text: message,
                         is_user: false,
@@ -76,7 +81,7 @@ impl ChatView {
                     if ui.button("Send").clicked() || (input.lost_focus() && enter_pressed) {
                         if !self.input.is_empty() {
                             // Send the message to the WebSocket thread
-                            if let Err(e) = self.tx.send(self.input.clone()) {
+                            if let Err(e) = self.ui_to_drone_tx.send(self.input.clone()) {
                                 eprintln!("Failed to send message: {}", e);
                             }
                             // Add the message to the chat
@@ -89,13 +94,5 @@ impl ChatView {
                     }
                 });
             });
-    }
-
-    pub fn get_receiver(&self) -> Receiver<String> {
-        self.rx.clone()
-    }
-
-    pub fn get_sender(&self) -> Sender<String> {
-        self.tx.clone()
     }
 }

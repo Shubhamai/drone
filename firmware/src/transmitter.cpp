@@ -23,6 +23,10 @@ void TransmitterController::update(TransmitterData data)
                 while (true)
                     ;
             }
+            else
+            {
+                TRANSMITTER_SERIAL.println("Unknown command - " + input);
+            }
         }
     }
 }

@@ -9,14 +9,18 @@
 #include "baro.h"
 #include "imu.h"
 #include "filter.h"
+#include "pid.h"
 
 MotorController motors(FRONT_RIGHT_MOTOR_PIN, BACK_RIGHT_MOTOR_PIN,
                        BACK_LEFT_MOTOR_PIN, FRONT_LEFT_MOTOR_PIN);
 StateController state;
-ReceiverController receiver(RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_4_ROLL_PIN,
-                            RC_CHANNEL_3_PITCH_PIN, RC_CHANNEL_2_YAW_PIN);
+
+SimplifiedPIDController pidController(10, 0.1, 0,  // Roll (P, I, D)
+                                      10, 0.1, 0); // Pitch (P, I, D)
 
 TransmitterController transmitter;
+ReceiverController receiver(RC_CHANNEL_1_THROTTLE_PIN, RC_CHANNEL_4_ROLL_PIN,
+                            RC_CHANNEL_3_PITCH_PIN, RC_CHANNEL_2_YAW_PIN);
 
 Barometer barometer;
 IMUManager imuManager;
@@ -25,6 +29,7 @@ FilterManager filterManager;
 void setup(void)
 {
     DEBUG_SERIAL.begin(SERIAL_BAUD_RATE);
+    TRANSMITTER_SERIAL.setTimeout(2);
     TRANSMITTER_SERIAL.begin(1000000);
 
     Wire.begin();
@@ -35,13 +40,13 @@ void setup(void)
     motors.setupTimer();
 
     // Wait for serial monitor to open
-    while (!DEBUG_SERIAL)
-    {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(100);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(100);
-    }
+    // while (!DEBUG_SERIAL)
+    // {
+    //     digitalWrite(LED_BUILTIN, HIGH);
+    //     delay(100);
+    //     digitalWrite(LED_BUILTIN, LOW);
+    //     delay(100);
+    // }
     DEBUG_SERIAL.println("Starting Drone...");
 
     state.initialize();
@@ -78,18 +83,27 @@ void loop()
         motors.enableMotors(receiver);
     }
 
-    int RCthrottle = receiver.getThrottle();
-    int RCpitch = receiver.getPitch();
-    int RCyaw = receiver.getYaw();
-    int RCroll = receiver.getRoll();
+    int RCthrottle = receiver.getThrottle(); // in range [1000, 2000]
+    int RCpitch = receiver.getPitch();       // in range [1000, 2000]
+    int RCyaw = receiver.getYaw();           // in range [1000, 2000]
+    int RCroll = receiver.getRoll();         // in range [1000, 2000]
 
     IMUData imu_data = imuManager.readIMU();
     BaroData baro_data = barometer.readBaroData();
     FilterData filterData = filterManager.processData(imu_data);
 
-    motors.setAllThrust(RCthrottle, RCthrottle, RCthrottle, RCthrottle);
+    // motors.setAllThrust(RCthrottle, RCthrottle, RCthrottle, RCthrottle);
+    // Update PID controller
+    pidController.updateDesiredAngles(receiver);
+
+    int roll_output, pitch_output;
+    float dt = 0.01; // Assume 100Hz loop frequency, adjust if different
+    pidController.computePID(filterData, dt, roll_output, pitch_output);
+
     int fr, br, bl, fl;
-    motors.getAllThrust(fr, br, bl, fl);
+    pidController.getMotorMixing(RCthrottle, roll_output, pitch_output, fr, br, bl, fl);
+
+    motors.setAllThrust(fr, br, bl, fl);
 
     TransmitterData data;
     data.elapsedTime = elapsedTime;
