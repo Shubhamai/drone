@@ -32,4 +32,12 @@ pub struct SerialData {
     pub back_right: i32,
     pub back_left: i32,
     pub front_left: i32,
+
+    pub kp_r: f32,
+    pub ki_r: f32,
+    pub kd_r: f32,
+
+    // pub kp_p: f32,
+    // pub ki_p: f32,
+    // pub kd_p: f32,
 }

@@ -51,7 +51,7 @@ impl CommandsView {
                     .clicked()
                 {
                     self.ui_to_drone_tx
-                        .send("abort".to_string())
+                        .send("command->abort".to_string())
                         .expect("Failed to send abort message");
                 }
             });

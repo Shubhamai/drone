@@ -36,19 +36,29 @@ struct TransmitterData
     int32_t backRight;
     int32_t backLeft;
     int32_t frontLeft;
+
+    float kp_r;
+    float ki_r;
+    float kd_r;
+
+    // float kp_p;
+    // float ki_p;
+    // float kd_p;
 };
 
 class TransmitterController
 {
 private:
-    unsigned long lastPrintTime;
-    const unsigned long printInterval = 20; // Print every 100ms
+    unsigned long lastTransmitTime;
+    const unsigned long transmitInterval = 20; // Print every 100ms
+
+    void sendData(TransmitterData data);
 
 public:
     TransmitterController();
 
-    void update(TransmitterData data);
-    void sendValues(TransmitterData data);
+    void transmitData(TransmitterData data);
+    String receiveData();
 };
 
 #endif

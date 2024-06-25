@@ -4,6 +4,8 @@ use crate::chat_view::ChatView;
 use crate::commands_view::CommandsView;
 use crate::data::ReceivedData;
 use crate::drone_view::DroneView;
+use crate::pid_view::PIDControlView;
+use crate::rc_control::RCControl;
 use crate::rc_view::RCView;
 use chrono::Local;
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -18,6 +20,8 @@ pub struct MyApp {
     attitude_view: AttitudeView,
     accelerometer_view: AccelerometerView,
     rc_view: RCView,
+    rc_control: RCControl,
+    pid_control: PIDControlView,
     pub chat_view: ChatView,
     commands_view: CommandsView,
     received_data: Arc<Mutex<ReceivedData>>,
@@ -40,9 +44,11 @@ enum WindowType {
     Drone,
     Attitude,
     Accelerometer,
-    RC,
+    RCView,
     Chat,
     Commands,
+    RCControl,
+    PIDControl,
 }
 
 impl MyApp {
@@ -58,6 +64,7 @@ impl MyApp {
             attitude_view: AttitudeView::default(),
             accelerometer_view: AccelerometerView::new(),
             rc_view: RCView::default(),
+            rc_control: RCControl::new(ui_to_drone_tx.clone()),
             chat_view: ChatView::new(
                 ui_to_drone_tx.clone(),
                 ui_to_drone_rx.clone(),
@@ -65,11 +72,12 @@ impl MyApp {
                 drone_to_ui_rx.clone(),
             ),
             commands_view: CommandsView::new(
-                ui_to_drone_tx,
+                ui_to_drone_tx.clone(),
                 ui_to_drone_rx,
                 drone_to_ui_tx,
                 drone_to_ui_rx,
             ),
+            pid_control: PIDControlView::new(ui_to_drone_tx),
             received_data,
             start_time: Instant::now(),
             last_received_time: Arc::new(Mutex::new(Instant::now())),
@@ -190,7 +198,12 @@ impl eframe::App for MyApp {
                         .push(WindowType::Accelerometer);
                 }
                 if ui.button("Add RC View").clicked() {
-                    self.tabs[self.active_tab].windows.push(WindowType::RC);
+                    self.tabs[self.active_tab].windows.push(WindowType::RCView);
+                }
+                if ui.button("Add RC Control").clicked() {
+                    self.tabs[self.active_tab]
+                        .windows
+                        .push(WindowType::RCControl);
                 }
                 if ui.button("Add Chat").clicked() {
                     self.tabs[self.active_tab].windows.push(WindowType::Chat);
@@ -199,6 +212,11 @@ impl eframe::App for MyApp {
                     self.tabs[self.active_tab]
                         .windows
                         .push(WindowType::Commands);
+                }
+                if ui.button("PID Control").clicked() {
+                    self.tabs[self.active_tab]
+                        .windows
+                        .push(WindowType::PIDControl);
                 }
             });
         });
@@ -211,9 +229,11 @@ impl eframe::App for MyApp {
                     WindowType::Accelerometer => {
                         self.accelerometer_view.window(ctx, &self.received_data)
                     }
-                    WindowType::RC => self.rc_view.window(ctx, &self.received_data),
+                    WindowType::RCView => self.rc_view.window(ctx, &self.received_data),
                     WindowType::Chat => self.chat_view.window(ctx, &self.received_data),
                     WindowType::Commands => self.commands_view.window(ctx, &self.received_data),
+                    WindowType::RCControl => self.rc_control.window(ctx),
+                    WindowType::PIDControl => self.pid_control.window(ctx, &self.received_data),
                 }
             }
         });

@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 chrono = "0.4.38"
 crossbeam-channel = "0.5.13"
-eframe = "0.27.2"
+eframe = {version="0.27.2", features=["wgpu"]}
 egui_extras = "0.27.2"
 egui_plot = "0.27.2"
 env_logger = "0.11.3"

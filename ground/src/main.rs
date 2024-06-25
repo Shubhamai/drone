@@ -5,6 +5,8 @@ mod chat_view;
 mod commands_view;
 mod data;
 mod drone_view;
+mod pid_view;
+mod rc_control;
 mod rc_view;
 
 use app::MyApp;
@@ -120,6 +122,8 @@ fn main() -> Result<(), eframe::Error> {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_maximized(true),
+        // hardware_acceleration: eframe::HardwareAcceleration::Off,
+        // renderer: eframe::Renderer::Wgpu,
         ..Default::default()
     };
     eframe::run_native(

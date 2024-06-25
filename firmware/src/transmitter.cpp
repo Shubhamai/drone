@@ -2,36 +2,20 @@
 #include "consts.h"
 #include <ArduinoJson.h>
 
-TransmitterController::TransmitterController() : lastPrintTime(0) {}
+TransmitterController::TransmitterController() : lastTransmitTime(0) {}
 
-void TransmitterController::update(TransmitterData data)
+void TransmitterController::transmitData(TransmitterData data)
 {
     unsigned long elapsed = millis();
 
-    if (elapsed - lastPrintTime >= printInterval)
+    if (elapsed - lastTransmitTime >= transmitInterval)
     {
-        sendValues(data);
-        lastPrintTime = elapsed;
-
-        if (TRANSMITTER_SERIAL.available())
-        {
-            String input = TRANSMITTER_SERIAL.readStringUntil('\n');
-            if (input == "abort")
-            {
-                DEBUG_SERIAL.println("Aborting...");
-                TRANSMITTER_SERIAL.println("Aborting...");
-                while (true)
-                    ;
-            }
-            else
-            {
-                TRANSMITTER_SERIAL.println("Unknown command - " + input);
-            }
-        }
+        sendData(data);
+        lastTransmitTime = elapsed;
     }
 }
 
-void TransmitterController::sendValues(TransmitterData data)
+void TransmitterController::sendData(TransmitterData data)
 {
     StaticJsonDocument<512> doc;
 
@@ -58,8 +42,23 @@ void TransmitterController::sendValues(TransmitterData data)
     doc["back_right"] = data.backRight;
     doc["back_left"] = data.backLeft;
     doc["front_left"] = data.frontLeft;
+    doc["kp_r"] = data.kp_r;
+    doc["ki_r"] = data.ki_r;
+    doc["kd_r"] = data.kd_r;
+    // doc["kp_p"] = data.kp_p;
+    // doc["ki_p"] = data.ki_p;
+    // doc["kd_p"] = data.kd_p;
 
     String jsonString;
     serializeJson(doc, jsonString);
     TRANSMITTER_SERIAL.println(jsonString);
-}   
+}
+
+String TransmitterController::receiveData()
+{
+    if (TRANSMITTER_SERIAL.available())
+    {
+        return TRANSMITTER_SERIAL.readStringUntil('\n');
+    }
+    return "";
+}
