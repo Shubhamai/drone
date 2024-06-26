@@ -1,10 +1,6 @@
 # Drone [WIP]
 
-
 https://github.com/Shubhamai/drone/assets/51819922/63be072e-84b0-4408-a207-5eb6f450ec99
-
-
-
 
 ## Introduction
 
@@ -33,15 +29,15 @@ The flight computer is built on a perfboard with a Teensy 4.1 running custom fir
 
 The firmware is modular and consists of several key components:
 
-1. `main.cpp`: The entry point of the firmware, handling initialization and the main control loop.
-2. `filter.h`: Implements sensor fusion using a Madgwick or Mahony filter to estimate the drone's orientation.
-3. `pid.h`: Implements a simplified PID controller for only roll control for testing.
-4. `state.h`: Manages the drone's state and LED indicators.
-5. `transmitter.h`: Handles communication with the Raspberry Pi.
-6. `consts.h`: Defines constants used throughout the firmware.
-7. `barometer.h`: Interfaces with the barometric pressure sensor.
-8. `imu.h`: Interfaces with the IMU sensor for accelerometer and gyroscope data.
-9. `motor.h`: Controls the drone's motors based on the PID output. Has functions for arming, disarming, and setting motor speeds. I also contains hardware interrupt handlers if the signal is not received for a certain time.
+1. [`main.cpp`](./firmware/src/main.cpp): The entry point of the firmware, handling initialization and the main control loop.
+2. [`filter.h`](./firmware/src/filter.h): Implements sensor fusion using a Madgwick or Mahony filter to estimate the drone's orientation.
+3. [`pid.h`](./firmware/src/pid.h): Implements a simplified PID controller for only roll control for testing.
+4. [`state.h`](./firmware/src/state.h): Manages the drone's state and LED indicators.
+5. [`transmitter.h`](./firmware/src/transmitter.h): Handles communication with the Raspberry Pi.
+6. [`consts.h`](./firmware/src/consts.h): Defines constants used throughout the firmware.
+7. [`baro.h`](./firmware/src/baro.h): Interfaces with the barometric pressure sensor.
+8. [`imu.h`](./firmware/src/imu.h): Interfaces with the IMU sensor for accelerometer and gyroscope data.
+9. [`motor.h`](./firmware/src/motor.h): Controls the drone's motors based on the PID output. Has functions for arming, disarming, and setting motor speeds. I also contains hardware interrupt handlers if the signal is not received for a certain time.
 
 ### 2. Communication Bridge (Raspberry Pi)
 
@@ -155,12 +151,11 @@ To use this system with your own drone project:
 1. Flight Computer Setup:
 
    - Flash the custom firmware onto your microcontroller
-   - Connect sensors and motors according to the pin definitions in `consts.h`
-   - Adjust PID parameters in `pid.h` for your drone's characteristics
+   - Connect sensors and motors according to the pin definitions in [`consts.h`](./firmware/src/consts.h)
 
 2. Raspberry Pi Setup:
 
-   - Install Rust locally and run `sudo apt install -y gcc-aarch64-linux-gnu`
+   - Install Rust locally and run `sudo apt install -y gcc-aarch64-linux-gnu` to cross-compile for the Raspberry Pi
    - Built the code using `cargo build --release` and copy the binary to the Raspberry Pi
    - Copy the binary to the Raspberry Pi and run the executable
 
