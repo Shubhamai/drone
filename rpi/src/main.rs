@@ -89,7 +89,7 @@ async fn handle_connection(stream: TcpStream) {
     // Spawn a task to receive from channel and send to WebSocket
     let ws_task = tokio::spawn(async move {
         while let Some(line) = rx.recv().await {
-            let aruco_ids = vec![1, 2, 3, 4, 5]; // Replace with actual Aruco ID detection
+            let aruco_ids = vec![1, 2, 3, 4, 5]; // TODO: Replace with actual Aruco ID detection
             let combined_data = json!({
                 "aruco_ids": aruco_ids,
                 "serial_data": line.trim(),
