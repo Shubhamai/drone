@@ -1,5 +1,11 @@
 # Drone [WIP]
 
+
+https://github.com/Shubhamai/drone/assets/51819922/63be072e-84b0-4408-a207-5eb6f450ec99
+
+
+
+
 ## Introduction
 
 This project is a drone flight system consisting of custom flight hardware, firmware, a Raspberry Pi-based communication bridge, and a ground control station. The ultimate goal is to build a fully autonomous drone capable of takeoff/landing on a target platform.
@@ -81,8 +87,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 ### 3. Ground Control Station
-
-[![Drone Control](./imgs/ground.mp4)](./imgs/ground.mp4)
 
 The ground control station is a desktop application written in Rust using the [egui](https://github.com/emilk/egui). It provides a user interface for monitoring telemetry, controlling the drone, and adjusting flight parameters.
 
