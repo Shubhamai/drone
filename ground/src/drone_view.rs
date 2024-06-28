@@ -100,7 +100,7 @@ impl DroneView {
                 format!("{:.0}", thrust),
                 egui::FontId::proportional(15.0),
                 // egui::Color32::WHITE, // White text for better contrast
-                egui::Color32::BLACK
+                egui::Color32::BLACK,
             );
         }
 

@@ -8,6 +8,7 @@ const KEYBOARD_CONTROL_SPEED: f32 = 0.01; //0.05;
 pub struct RCControl {
     // open: bool,
     pub ui_to_drone_tx: Sender<String>,
+    enabled_transmit : bool,
     throttle: f32,
     yaw: f32,
     pitch: f32,
@@ -22,7 +23,8 @@ impl RCControl {
         Self {
             // open: false,
             ui_to_drone_tx,
-            throttle: 0.0,
+            enabled_transmit: false,
+            throttle: -1.0,
             yaw: 0.0,
             pitch: 0.0,
             roll: 0.0,
@@ -50,7 +52,7 @@ impl RCControl {
     pub fn window(&mut self, ctx: &egui::Context) {
         // transmit the RC control values to the drone every 50ms
 
-        if self.last_sent_time.elapsed() > std::time::Duration::from_millis(50) {
+        if self.last_sent_time.elapsed() > std::time::Duration::from_millis(200) && self.enabled_transmit {
             self.last_sent_time = std::time::Instant::now();
 
             // convert all ranges from 1000 to 2000
@@ -71,6 +73,9 @@ impl RCControl {
             .resizable(true)
             .max_size([500.0, 300.0])
             .show(ctx, |ui| {
+
+                ui.checkbox(&mut self.enabled_transmit, "Enable Transmit");
+
                 let available_size = ui.available_size();
                 let height = available_size.y - 20.0;
                 let width = height * 2.0;

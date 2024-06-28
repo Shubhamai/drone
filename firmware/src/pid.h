@@ -19,16 +19,42 @@ private:
     // Output limits
     const float MAX_OUTPUT = 250; // Adjust as needed
 
-    // Helper function to apply PID
+    // Anti-windup parameters
+    const float MAX_INTEGRAL = 100;           // Adjust based on your system
+    const float INTEGRAL_RESET_THRESHOLD = 5; // Degrees, adjust as needed
+
+    // Helper function to apply PID with enhanced anti-windup
     float applyPID(float error, float &integral, float &prev_error,
                    float Kp, float Ki, float Kd, float dt)
     {
+        // Proportional term
+        float P = Kp * error;
+
+        // Integral term with anti-windup
         integral += error * dt;
+        integral = constrain(integral, -MAX_INTEGRAL, MAX_INTEGRAL);
+
+        // Reset integral when error changes sign or is small
+        if (error * prev_error < 0 || abs(error) < INTEGRAL_RESET_THRESHOLD)
+        {
+            integral = 0;
+        }
+
+        float I = Ki * integral;
+
+        // Derivative term
         float derivative = (error - prev_error) / dt;
+        float D = Kd * derivative;
+
         prev_error = error;
-        // Anti-windup: Limit integral term
-        integral = constrain(integral, -MAX_OUTPUT / Ki, MAX_OUTPUT / Ki);
-        return Kp * error + Ki * integral + Kd * derivative;
+
+        // Calculate total output
+        float output = P + I + D;
+
+        // Apply output limits
+        output = constrain(output, -MAX_OUTPUT, MAX_OUTPUT);
+
+        return output;
     }
 
 public:
@@ -41,7 +67,7 @@ public:
     {
         // Map RC input to desired angle with deadband
         int deadband = 50; // Adjust as needed
-        desired_roll = (abs(roll - 1500) > deadband) ? map(roll, 1000, 2000, -20, 20) : 0;
+        desired_roll = 0;  //(abs(roll - 1500) > deadband) ? map(roll, 1000, 2000, -20, 20) : 0;
     }
 
     void computePID(const FilterData &filterData, float dt, int &roll_output)
@@ -60,10 +86,10 @@ public:
                         int &front_right, int &back_right, int &back_left, int &front_left)
     {
         // X configuration mixing for roll only
-        front_right = throttle + roll_output;
-        back_right = throttle + roll_output;
-        back_left = throttle - roll_output;
-        front_left = throttle - roll_output;
+        front_right = throttle - roll_output;
+        back_right = throttle - roll_output;
+        back_left = throttle + roll_output;
+        front_left = throttle + roll_output;
 
         // Ensure motor values are within valid range
         front_right = constrain(front_right, 1000, 2000);

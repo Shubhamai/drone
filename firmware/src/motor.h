@@ -5,6 +5,7 @@
 #include <TimerOne.h>
 #include "consts.h"
 #include "receiver.h"
+#include "fake_receiver.h"
 
 class MotorController
 {
@@ -43,6 +44,7 @@ public:
 
     void disableMotors();
     void enableMotors(ReceiverController &receiver);
+    void enableMotors(FakeReceiverController &receiver);
 
     void setupTimer();
 };

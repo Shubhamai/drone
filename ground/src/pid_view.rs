@@ -7,6 +7,7 @@ use crate::data::ReceivedData;
 pub struct PIDControlView {
     // open: bool,
     last_sent_time: std::time::Instant,
+    enabled_transmit: bool,
     ui_to_drone_tx: crossbeam_channel::Sender<String>,
     yaw_pid: PIDValues,
     pitch_pid: PIDValues,
@@ -25,6 +26,7 @@ impl PIDControlView {
         Self {
             // open: false,
             last_sent_time: std::time::Instant::now(),
+            enabled_transmit: false,
             ui_to_drone_tx,
             yaw_pid: PIDValues {
                 p: 0.0,
@@ -37,8 +39,8 @@ impl PIDControlView {
                 d: 0.0,
             },
             roll_pid: PIDValues {
-                p: 0.0,
-                i: 0.0,
+                p: 4.6,
+                i: 0.1,
                 d: 0.0,
             },
         }
@@ -66,7 +68,9 @@ impl PIDControlView {
             .show(ctx, |ui| {
                 let data = received_data.lock().unwrap();
 
-                if self.last_sent_time.elapsed() > std::time::Duration::from_millis(50) {
+                if self.last_sent_time.elapsed() > std::time::Duration::from_millis(200)
+                    && self.enabled_transmit
+                {
                     self.last_sent_time = std::time::Instant::now();
 
                     // convert all ranges from 1000 to 2000
@@ -82,6 +86,8 @@ impl PIDControlView {
                 ui.heading("PID Control Values");
                 ui.add_space(10.0);
 
+                ui.checkbox(&mut self.enabled_transmit, "Enable Transmit");
+
                 ui.group(|ui| {
                     // ui.label(format!(
                     //     "Roll - P: {}, I: {}, D: {}",
@@ -95,17 +101,38 @@ impl PIDControlView {
                     // use slider to change the values
                     ui.horizontal(|ui| {
                         ui.label("P:");
-                        ui.add(egui::Slider::new(&mut self.roll_pid.p, 0.0..=10.0));
+                        ui.spacing_mut().slider_width = 300.0;
+
+                        ui.add(
+                            egui::Slider::new(&mut self.roll_pid.p, 0.0..=40.0)
+                                .step_by(0.001)
+                                .smart_aim(false)
+                                .fixed_decimals(3),
+                        );
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("I:");
-                        ui.add(egui::Slider::new(&mut self.roll_pid.i, 0.0..=10.0));
+                        ui.spacing_mut().slider_width = 300.0;
+
+                        ui.add(
+                            egui::Slider::new(&mut self.roll_pid.i, 0.0..=40.0)
+                                .step_by(0.001)
+                                .smart_aim(false)
+                                .fixed_decimals(3),
+                        );
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("D:");
-                        ui.add(egui::Slider::new(&mut self.roll_pid.d, 0.0..=10.0));
+                        ui.spacing_mut().slider_width = 300.0;
+
+                        ui.add(
+                            egui::Slider::new(&mut self.roll_pid.d, 0.0..=40.0)
+                                .step_by(0.001)
+                                .smart_aim(false)
+                                .fixed_decimals(3),
+                        );
                     });
                 });
                 // self.pid_ui(ui, "Yaw", &mut self.yaw_pid);

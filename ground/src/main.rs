@@ -8,6 +8,7 @@ mod drone_view;
 mod pid_view;
 mod rc_control;
 mod rc_view;
+mod notes;
 
 use app::MyApp;
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -121,7 +122,11 @@ fn main() -> Result<(), eframe::Error> {
     });
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_maximized(true),
+        viewport: egui::ViewportBuilder {
+            maximized: Some(true),
+            title: Some("Drone Control".to_string()),
+            ..Default::default()
+        },
         // hardware_acceleration: eframe::HardwareAcceleration::Off,
         // renderer: eframe::Renderer::Wgpu,
         ..Default::default()

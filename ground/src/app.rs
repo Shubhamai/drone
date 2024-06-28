@@ -4,12 +4,14 @@ use crate::chat_view::ChatView;
 use crate::commands_view::CommandsView;
 use crate::data::ReceivedData;
 use crate::drone_view::DroneView;
+use crate::notes::NoteEditorView;
 use crate::pid_view::PIDControlView;
 use crate::rc_control::RCControl;
 use crate::rc_view::RCView;
 use chrono::Local;
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use eframe::egui;
+use eframe::egui::{self, RichText};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -22,6 +24,7 @@ pub struct MyApp {
     rc_view: RCView,
     rc_control: RCControl,
     pid_control: PIDControlView,
+    notes: NoteEditorView,
     pub chat_view: ChatView,
     commands_view: CommandsView,
     received_data: Arc<Mutex<ReceivedData>>,
@@ -49,6 +52,7 @@ enum WindowType {
     Commands,
     RCControl,
     PIDControl,
+    Notes,
 }
 
 impl MyApp {
@@ -78,12 +82,13 @@ impl MyApp {
                 drone_to_ui_rx,
             ),
             pid_control: PIDControlView::new(ui_to_drone_tx),
+            notes: NoteEditorView::new(PathBuf::from("/home/elden/Documents/projects/jet/ground/notes.txt")),
             received_data,
             start_time: Instant::now(),
             last_received_time: Arc::new(Mutex::new(Instant::now())),
             tabs: vec![Tab {
                 name: "Tab 1".to_string(),
-                windows: Vec::new(),
+                windows: vec![WindowType::Commands],
             }],
             active_tab: 0,
             is_connected: false,
@@ -184,39 +189,164 @@ impl eframe::App for MyApp {
 
         egui::SidePanel::right("controls").show(ctx, |ui| {
             ui.vertical(|ui| {
-                if ui.button("Add Drone View").clicked() {
-                    self.tabs[self.active_tab].windows.push(WindowType::Drone);
+                if ui.button("Open All").clicked() {
+                    self.tabs[self.active_tab].windows = vec![
+                        WindowType::Drone,
+                        WindowType::Attitude,
+                        WindowType::Accelerometer,
+                        WindowType::RCView,
+                        WindowType::Chat,
+                        WindowType::Commands,
+                        WindowType::RCControl,
+                        WindowType::PIDControl,
+                        WindowType::Notes,
+                    ];
                 }
-                if ui.button("Add Attitude View").clicked() {
-                    self.tabs[self.active_tab]
+
+                if ui.button("Close All").clicked() {
+                    self.tabs[self.active_tab].windows = Vec::new();
+                }
+
+                if ui
+                    .button(
+                        // "Drone View"
+                        RichText::new("Drone View"), // .background_color(if self.tabs[self.active_tab]
+                                                     //     .windows
+                                                     //     .iter()
+                                                     //     .any(|w| *w == WindowType::Drone)
+                                                     // {
+                                                     //     egui::Color32::BLACK
+                                                     // } else {
+                                                     //     egui::Color32::GRAY
+                                                     // }),
+                    )
+                    .clicked()
+                {
+                    if self.tabs[self.active_tab]
                         .windows
-                        .push(WindowType::Attitude);
+                        .iter()
+                        .any(|w| *w == WindowType::Drone)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Drone);
+                    } else {
+                        self.tabs[self.active_tab].windows.push(WindowType::Drone);
+                    }
                 }
-                if ui.button("Add Accelerometer View").clicked() {
-                    self.tabs[self.active_tab]
+                if ui.button("Attitude View").clicked() {
+                    if self.tabs[self.active_tab]
                         .windows
-                        .push(WindowType::Accelerometer);
+                        .iter()
+                        .any(|w| *w == WindowType::Attitude)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Attitude);
+                    } else {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .push(WindowType::Attitude);
+                    }
                 }
-                if ui.button("Add RC View").clicked() {
-                    self.tabs[self.active_tab].windows.push(WindowType::RCView);
-                }
-                if ui.button("Add RC Control").clicked() {
-                    self.tabs[self.active_tab]
+                if ui.button("Accelerometer View").clicked() {
+                    if self.tabs[self.active_tab]
                         .windows
-                        .push(WindowType::RCControl);
+                        .iter()
+                        .any(|w| *w == WindowType::Accelerometer)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Accelerometer);
+                    } else {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .push(WindowType::Accelerometer);
+                    }
                 }
-                if ui.button("Add Chat").clicked() {
-                    self.tabs[self.active_tab].windows.push(WindowType::Chat);
-                }
-                if ui.button("Add Commands").clicked() {
-                    self.tabs[self.active_tab]
+                if ui.button("RC View").clicked() {
+                    if self.tabs[self.active_tab]
                         .windows
-                        .push(WindowType::Commands);
+                        .iter()
+                        .any(|w| *w == WindowType::RCView)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::RCView);
+                    } else {
+                        self.tabs[self.active_tab].windows.push(WindowType::RCView);
+                    }
+                }
+                if ui.button("RC Control").clicked() {
+                    if self.tabs[self.active_tab]
+                        .windows
+                        .iter()
+                        .any(|w| *w == WindowType::RCControl)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::RCControl);
+                    } else {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .push(WindowType::RCControl);
+                    }
+                }
+                if ui.button("Chat").clicked() {
+                    if self.tabs[self.active_tab]
+                        .windows
+                        .iter()
+                        .any(|w| *w == WindowType::Chat)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Chat);
+                    } else {
+                        self.tabs[self.active_tab].windows.push(WindowType::Chat);
+                    }
+                }
+                if ui.button("Commands").clicked() {
+                    if self.tabs[self.active_tab]
+                        .windows
+                        .iter()
+                        .any(|w| *w == WindowType::Commands)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Commands);
+                    } else {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .push(WindowType::Commands);
+                    }
                 }
                 if ui.button("PID Control").clicked() {
-                    self.tabs[self.active_tab]
+                    if self.tabs[self.active_tab]
                         .windows
-                        .push(WindowType::PIDControl);
+                        .iter()
+                        .any(|w| *w == WindowType::PIDControl)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::PIDControl);
+                    } else {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .push(WindowType::PIDControl);
+                    }
+                }
+                if ui.button("Notes").clicked() {
+                    if self.tabs[self.active_tab]
+                        .windows
+                        .iter()
+                        .any(|w| *w == WindowType::Notes)
+                    {
+                        self.tabs[self.active_tab]
+                            .windows
+                            .retain(|w| *w != WindowType::Notes);
+                    } else {
+                        self.tabs[self.active_tab].windows.push(WindowType::Notes);
+                    }
                 }
             });
         });
@@ -234,6 +364,7 @@ impl eframe::App for MyApp {
                     WindowType::Commands => self.commands_view.window(ctx, &self.received_data),
                     WindowType::RCControl => self.rc_control.window(ctx),
                     WindowType::PIDControl => self.pid_control.window(ctx, &self.received_data),
+                    WindowType::Notes => self.notes.window(ctx),
                 }
             }
         });

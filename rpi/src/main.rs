@@ -73,7 +73,7 @@ async fn handle_connection(stream: TcpStream) {
                             }
                             Err(e) => {
                                 eprintln!("Error reading from serial: {}", e);
-                                break;
+                                continue;
                             }
                         }
                     }
@@ -105,14 +105,12 @@ async fn handle_connection(stream: TcpStream) {
     });
 
     // Handle WebSocket messages and write to serial
+    let mut latest_command = String::new();
     while let Some(msg) = ws_receiver.next().await {
         match msg {
             Ok(Message::Text(text)) => {
-                println!("Received: {}", text);
-                if let Err(e) = serial_writer.write_all(text.as_bytes()).await {
-                    eprintln!("Serial write error: {}", e);
-                    break;
-                }
+                // Update the latest command
+                latest_command = text;
             }
             Ok(Message::Close(_)) => {
                 println!("WebSocket connection closed");
@@ -123,6 +121,17 @@ async fn handle_connection(stream: TcpStream) {
                 break;
             }
             _ => {}
+        }
+
+        // Process the latest command immediately
+        if !latest_command.is_empty() {
+            println!("Processing command: {}", latest_command);
+            if let Err(e) = serial_writer.write_all(latest_command.as_bytes()).await {
+                eprintln!("Serial write error: {}", e);
+                break;
+            }
+            // Clear the command after processing
+            latest_command.clear();
         }
     }
 
@@ -135,6 +144,3 @@ async fn handle_connection(stream: TcpStream) {
 
     println!("Connection handler finished");
 }
-// sudo apt install -y gcc-aarch64-linux-gnu # local machine
-// cargo build --target aarch64-unknown-linux-gnu
-// scp /home/elden/Documents/projects/jet/rpi/target/aarch64-unknown-linux-gnu/release/rpi elden@192.168.1.107:~/Documents/jet/rpi

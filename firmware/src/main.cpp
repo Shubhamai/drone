@@ -12,6 +12,12 @@
 #include "filter.h"
 #include "pid.h"
 
+
+void doReboot()
+{
+    SCB_AIRCR = 0x05FA0004;
+}
+
 MotorController motors(FRONT_RIGHT_MOTOR_PIN, BACK_RIGHT_MOTOR_PIN,
                        BACK_LEFT_MOTOR_PIN, FRONT_LEFT_MOTOR_PIN);
 StateController state;
@@ -30,6 +36,10 @@ FilterManager filterManager;
 
 void setup(void)
 {
+    motors.initialize();
+    motors.disableMotors();
+    motors.setupTimer();
+
     DEBUG_SERIAL.begin(SERIAL_BAUD_RATE);
     TRANSMITTER_SERIAL.setTimeout(2);
     TRANSMITTER_SERIAL.begin(1000000);
@@ -37,18 +47,14 @@ void setup(void)
     Wire.begin();
     Wire.setClock(I2C_CLOCK_SPEED);
 
-    motors.initialize();
-    motors.disableMotors();
-    motors.setupTimer();
-
     // Wait for serial monitor to open
-    while (!DEBUG_SERIAL)
-    {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(100);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(100);
-    }
+    // while (!DEBUG_SERIAL)
+    // {
+    //     digitalWrite(LED_BUILTIN, HIGH);
+    //     delay(100);
+    //     digitalWrite(LED_BUILTIN, LOW);
+    //     delay(100);
+    // }
     DEBUG_SERIAL.println("Starting Drone...");
 
     state.initialize();
@@ -65,6 +71,25 @@ void setup(void)
     //     delay(100);
     // }
     // DEBUG_SERIAL.println("Throttle is zero. Ready to fly!");
+    delay(5000);
+    TRANSMITTER_SERIAL.println("Waiting for command to arm...");
+    DEBUG_SERIAL.println("Waiting for command to arm...");
+    while (true)
+    {
+        TransmitterData data;
+        transmitter.transmitData(data);
+        String receivedData = transmitter.receiveData();
+        if (receivedData.length() > 0)
+        {
+            if (receivedData == "command->arm")
+            {
+                DEBUG_SERIAL.println("Armed...");
+                TRANSMITTER_SERIAL.println("Armed...");
+                break;
+            }
+        }
+        delay(400);
+    }
 
     receiver.setThrottle(1000);
     receiver.setRoll(1500);
@@ -74,12 +99,13 @@ void setup(void)
 }
 
 elapsedMillis elapsedTime;
+unsigned long lastEnableMotorCheck = 0;
 void loop()
 {
     uint32_t start_loop = millis();
 
     state.update();
-    bool isReceivedEnabled = receiver.update();
+    // bool isReceivedEnabled = receiver.update();
 
     String receivedData = transmitter.receiveData();
     if (receivedData.length() > 0)
@@ -107,18 +133,32 @@ void loop()
 
             pidController.adjustPIDConstants(Kp_r, Ki_r, Kd_r);
         }
+
+        // make sure ping is received every 300ms
+
+        if (receivedData == "command->enable_motors")
+        {
+            // DEBUG_SERIAL.println("Enabling motors...");
+            // TRANSMITTER_SERIAL.println("Enabling motors...");
+            // motors.enableMotors();
+            lastEnableMotorCheck = millis();
+        }
+        if (receivedData == "command->reboot")
+        {
+            doReboot();
+        }
     }
 
     // if (!isReceivedEnabled)
-    // {
-    //     DEBUG_SERIAL.println("Receiver not enabled");
-    //     motors.disableMotors();
-    //     return;
-    // }
-    // else
-    // {
-    //     motors.enableMotors(receiver);
-    // }
+    if (millis() - lastEnableMotorCheck > 200)
+    {
+        DEBUG_SERIAL.println("Last enable motor check: disabling motors...");
+        motors.disableMotors();
+    }
+    else
+    {
+        motors.enableMotors(receiver);
+    }
 
     int RCthrottle = receiver.getThrottle(); // in range [1000, 2000]
     int RCpitch = receiver.getPitch();       // in range [1000, 2000]
@@ -181,8 +221,8 @@ void loop()
     //////////////////////////////////////////////////
 
     const uint32_t end_loop = millis();
-    DEBUG_SERIAL.print("Loop time: ");
-    DEBUG_SERIAL.println(end_loop - start_loop);
+    // DEBUG_SERIAL.print("Loop time: ");
+    // DEBUG_SERIAL.println(end_loop - start_loop);
     // if (end_loop - start_loop > 10)
     // {
     //     DEBUG_SERIAL.print("Loop time: ");

@@ -14,7 +14,7 @@ private:
     bool initialized;
 
 public:
-    FakeReceiverController() : throttle(1000), roll(1500), pitch(1500), yaw(1500), enabled(false), initialized(false) {}
+    FakeReceiverController() : throttle(1000), roll(1500), pitch(1500), yaw(1500), enabled(true), initialized(false) {}
 
     void initialize() { initialized = true; }
 
@@ -25,7 +25,7 @@ public:
         return enabled;
     }
 
-    bool isThrottleZero() { return throttle >= 1100 && throttle <= 1110; }
+    bool isThrottleZero() { return throttle >= 1000 && throttle <= 1150; }
 
     int getThrottle() { return throttle; }
     int getRoll() { return roll; }
