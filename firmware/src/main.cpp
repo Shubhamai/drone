@@ -12,7 +12,6 @@
 #include "filter.h"
 #include "pid.h"
 
-
 void doReboot()
 {
     SCB_AIRCR = 0x05FA0004;
@@ -22,7 +21,7 @@ MotorController motors(FRONT_RIGHT_MOTOR_PIN, BACK_RIGHT_MOTOR_PIN,
                        BACK_LEFT_MOTOR_PIN, FRONT_LEFT_MOTOR_PIN);
 StateController state;
 
-SimplifiedPIDController pidController(3.0, 0.1, 0.0); // Roll (P, I, D)
+SimplifiedPIDController pidController(1.2, 1.0, 4.0, 1.2, 1.0, 4.0);
 
 TransmitterController transmitter;
 
@@ -33,6 +32,30 @@ FakeReceiverController receiver; // Use FakeReceiverController instead of Receiv
 Barometer barometer;
 IMUManager imuManager;
 FilterManager filterManager;
+
+void parsePIDString(String input, float *values, int numValues)
+{
+    int startIndex = input.indexOf('>') + 1;
+    int endIndex = 0;
+
+    for (int i = 0; i < numValues; i++)
+    {
+        endIndex = input.indexOf(',', startIndex);
+        if (endIndex == -1)
+        {
+            endIndex = input.length();
+        }
+
+        String valueStr = input.substring(startIndex, endIndex);
+        values[i] = valueStr.toFloat();
+
+        startIndex = endIndex + 1;
+        if (startIndex >= input.length())
+        {
+            break;
+        }
+    }
+}
 
 void setup(void)
 {
@@ -120,18 +143,13 @@ void loop()
                 ;
         }
 
-        // format, e.g. pid->3.0,0.1,0.0
+        // format, e.g. pid->3.0,0.1,0.0,3.0,0.1,0.0
         if (receivedData.startsWith("pid->"))
         {
-            String pidValues = receivedData.substring(5);
-            int commaIndex = pidValues.indexOf(',');
-            float Kp_r = pidValues.substring(0, commaIndex).toFloat();
-            pidValues = pidValues.substring(commaIndex + 1);
-            commaIndex = pidValues.indexOf(',');
-            float Ki_r = pidValues.substring(0, commaIndex).toFloat();
-            float Kd_r = pidValues.substring(commaIndex + 1).toFloat();
+            float values[6];
+            parsePIDString(receivedData, values, 6);
 
-            pidController.adjustPIDConstants(Kp_r, Ki_r, Kd_r);
+            pidController.adjustPIDConstants(values[0], values[1], values[2], values[3], values[4], values[5]);
         }
 
         // make sure ping is received every 300ms
@@ -171,17 +189,18 @@ void loop()
 
     // motors.setAllThrust(RCthrottle, RCthrottle, RCthrottle, RCthrottle);
     // Update PID controller for roll only
-    pidController.updateDesiredAngle(RCroll);
+    pidController.updateDesiredAngle(RCroll, RCpitch);
 
     int roll_output;
+    int pitch_output;
     float dt = 0.01; // Assume 100Hz loop frequency, adjust if different
-    pidController.computePID(filterData, dt, roll_output);
+    pidController.computePID(filterData, dt, roll_output, pitch_output);
 
-    float Kp_r, Ki_r, Kd_r;
-    pidController.getPIDConstants(Kp_r, Ki_r, Kd_r);
+    float Kp_r, Ki_r, Kd_r, Kp_p, Ki_p, Kd_p;
+    pidController.getPIDConstants(Kp_r, Ki_r, Kd_r, Kp_p, Ki_p, Kd_p);
 
     int fr, br, bl, fl;
-    pidController.getMotorMixing(RCthrottle, roll_output, fr, br, bl, fl);
+    pidController.getMotorMixing(RCthrottle, roll_output, pitch_output, fr, br, bl, fl);
 
     motors.setAllThrust(fr, br, bl, fl);
 
@@ -212,9 +231,9 @@ void loop()
     data.kp_r = Kp_r;
     data.ki_r = Ki_r;
     data.kd_r = Kd_r;
-    // data.kp_p = Kp_p;
-    // data.ki_p = Ki_p;
-    // data.kd_p = Kd_p;
+    data.kp_p = Kp_p;
+    data.ki_p = Ki_p;
+    data.kd_p = Kd_p;
 
     transmitter.transmitData(data);
 

@@ -45,9 +45,9 @@ void TransmitterController::sendData(TransmitterData data)
     doc["kp_r"] = data.kp_r;
     doc["ki_r"] = data.ki_r;
     doc["kd_r"] = data.kd_r;
-    // doc["kp_p"] = data.kp_p;
-    // doc["ki_p"] = data.ki_p;
-    // doc["kd_p"] = data.kd_p;
+    doc["kp_p"] = data.kp_p;
+    doc["ki_p"] = data.ki_p;
+    doc["kd_p"] = data.kd_p;
 
     String jsonString;
     serializeJson(doc, jsonString);

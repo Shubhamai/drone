@@ -41,9 +41,9 @@ struct TransmitterData
     float ki_r;
     float kd_r;
 
-    // float kp_p;
-    // float ki_p;
-    // float kd_p;
+    float kp_p;
+    float ki_p;
+    float kd_p;
 };
 
 class TransmitterController

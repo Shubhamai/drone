@@ -37,7 +37,7 @@ pub struct SerialData {
     pub ki_r: f32,
     pub kd_r: f32,
 
-    // pub kp_p: f32,
-    // pub ki_p: f32,
-    // pub kd_p: f32,
+    pub kp_p: f32,
+    pub ki_p: f32,
+    pub kd_p: f32,
 }

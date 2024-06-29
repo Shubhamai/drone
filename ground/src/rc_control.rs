@@ -1,27 +1,26 @@
 use crossbeam_channel::Sender;
 use eframe::egui;
-use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-const KEYBOARD_CONTROL_SPEED: f32 = 0.01; //0.05;
+const KEYBOARD_CONTROL_SPEED: f32 = 0.025;
 
 #[derive(Clone)]
 pub struct RCControl {
-    // open: bool,
     pub ui_to_drone_tx: Sender<String>,
-    enabled_transmit : bool,
+    enabled_transmit: bool,
     throttle: f32,
     yaw: f32,
     pitch: f32,
     roll: f32,
     left_active: bool,
     right_active: bool,
-    last_sent_time: std::time::Instant,
+    last_sent_time: Instant,
+    last_sent_values: (f32, f32, f32, f32),
 }
 
 impl RCControl {
     pub fn new(ui_to_drone_tx: Sender<String>) -> Self {
         Self {
-            // open: false,
             ui_to_drone_tx,
             enabled_transmit: false,
             throttle: -1.0,
@@ -30,32 +29,22 @@ impl RCControl {
             roll: 0.0,
             left_active: false,
             right_active: false,
-            last_sent_time: std::time::Instant::now(),
+            last_sent_time: Instant::now(),
+            last_sent_values: (-1.0, 0.0, 0.0, 0.0),
         }
     }
-}
-
-impl RCControl {
-    // pub fn ui(&mut self, ui: &mut egui::Ui) {
-    //     if ui
-    //         .button(if self.open {
-    //             "Close RC Control"
-    //         } else {
-    //             "Open RC Control"
-    //         })
-    //         .clicked()
-    //     {
-    //         self.open = !self.open;
-    //     }
-    // }
 
     pub fn window(&mut self, ctx: &egui::Context) {
-        // transmit the RC control values to the drone every 50ms
+        let current_time = Instant::now();
+        let time_since_last_send = current_time.duration_since(self.last_sent_time);
+        let current_values = (self.throttle, self.yaw, self.pitch, self.roll);
 
-        if self.last_sent_time.elapsed() > std::time::Duration::from_millis(200) && self.enabled_transmit {
-            self.last_sent_time = std::time::Instant::now();
-
-            // convert all ranges from 1000 to 2000
+        if time_since_last_send >= Duration::from_millis(30)
+            && self.enabled_transmit
+            && current_values != self.last_sent_values
+        {
+            self.last_sent_time = current_time;
+            self.last_sent_values = current_values;
 
             self.ui_to_drone_tx
                 .send(format!(
@@ -69,11 +58,9 @@ impl RCControl {
         }
 
         egui::Window::new("RC Control")
-            // .open(&mut self.open)
             .resizable(true)
             .max_size([500.0, 300.0])
             .show(ctx, |ui| {
-
                 ui.checkbox(&mut self.enabled_transmit, "Enable Transmit");
 
                 let available_size = ui.available_size();
@@ -255,6 +242,10 @@ impl RCControl {
         ctx.input(|i| {
             if i.key_down(Key::Space) {
                 self.throttle = -1.0;
+
+                self.yaw = 0.0;
+                self.pitch = 0.0;
+                self.roll = 0.0;
             }
         });
 
@@ -325,32 +316,23 @@ impl RCControl {
         });
 
         // // Auto-center yaw, pitch, and roll when keys are released
-        // if !ctx.input().key_down(Key::A) && !ctx.input().key_down(Key::D) {
-        //     self.yaw = 0.0;
-        // }
-        // if !ctx.input().key_down(Key::ArrowUp) && !ctx.input().key_down(Key::ArrowDown) {
-        //     self.pitch = 0.0;
-        // }
-        // if !ctx.input().key_down(Key::ArrowLeft) && !ctx.input().key_down(Key::ArrowRight) {
-        //     self.roll = 0.0;
-        // }
 
-        ctx.input(|i| {
-            if !i.key_down(Key::A) && !i.key_down(Key::D) {
-                self.yaw = 0.0;
-            }
-        });
+        // ctx.input(|i| {
+        //     if !i.key_down(Key::A) && !i.key_down(Key::D) {
+        //         self.yaw = 0.0;
+        //     }
+        // });
 
-        ctx.input(|i| {
-            if !i.key_down(Key::ArrowUp) && !i.key_down(Key::ArrowDown) {
-                self.pitch = 0.0;
-            }
-        });
+        // ctx.input(|i| {
+        //     if !i.key_down(Key::ArrowUp) && !i.key_down(Key::ArrowDown) {
+        //         self.pitch = 0.0;
+        //     }
+        // });
 
-        ctx.input(|i| {
-            if !i.key_down(Key::ArrowLeft) && !i.key_down(Key::ArrowRight) {
-                self.roll = 0.0;
-            }
-        });
+        // ctx.input(|i| {
+        //     if !i.key_down(Key::ArrowLeft) && !i.key_down(Key::ArrowRight) {
+        //         self.roll = 0.0;
+        //     }
+        // });
     }
 }

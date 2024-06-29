@@ -7,14 +7,16 @@
 class SimplifiedPIDController
 {
 private:
-    // PID constants for roll only
+    // PID constants for roll and pitch
     float Kp_roll, Ki_roll, Kd_roll;
+    float Kp_pitch, Ki_pitch, Kd_pitch;
 
-    // Error variables for roll only
+    // Error variables for roll and pitch
     float error_roll, prev_error_roll, integral_roll;
+    float error_pitch, prev_error_pitch, integral_pitch;
 
-    // Desired angle (set by RC input)
-    float desired_roll;
+    // Desired angles (set by RC input)
+    float desired_roll, desired_pitch;
 
     // Output limits
     const float MAX_OUTPUT = 250; // Adjust as needed
@@ -58,38 +60,44 @@ private:
     }
 
 public:
-    SimplifiedPIDController(float Kp_r, float Ki_r, float Kd_r)
+    SimplifiedPIDController(float Kp_r, float Ki_r, float Kd_r, float Kp_p, float Ki_p, float Kd_p)
         : Kp_roll(Kp_r), Ki_roll(Ki_r), Kd_roll(Kd_r),
+          Kp_pitch(Kp_p), Ki_pitch(Ki_p), Kd_pitch(Kd_p),
           error_roll(0), prev_error_roll(0), integral_roll(0),
-          desired_roll(0) {}
+          error_pitch(0), prev_error_pitch(0), integral_pitch(0),
+          desired_roll(0), desired_pitch(0) {}
 
-    void updateDesiredAngle(int roll)
+    void updateDesiredAngle(int roll, int pitch)
     {
         // Map RC input to desired angle with deadband
         int deadband = 50; // Adjust as needed
-        desired_roll = 0;  //(abs(roll - 1500) > deadband) ? map(roll, 1000, 2000, -20, 20) : 0;
+        desired_roll = (abs(roll - 1500) > deadband) ? map(roll, 1000, 2000, -20, 20) : 0;
+        desired_pitch = (abs(pitch - 1500) > deadband) ? map(pitch, 1000, 2000, -20, 20) : 0;
     }
 
-    void computePID(const FilterData &filterData, float dt, int &roll_output)
+    void computePID(const FilterData &filterData, float dt, int &roll_output, int &pitch_output)
     {
-        // Compute error
+        // Compute errors
         error_roll = desired_roll - filterData.roll;
+        error_pitch = desired_pitch - filterData.pitch;
 
-        // Apply PID for roll
+        // Apply PID for roll and pitch
         roll_output = applyPID(error_roll, integral_roll, prev_error_roll, Kp_roll, Ki_roll, Kd_roll, dt);
+        pitch_output = applyPID(error_pitch, integral_pitch, prev_error_pitch, Kp_pitch, Ki_pitch, Kd_pitch, dt);
 
-        // Limit output
+        // Limit outputs
         roll_output = constrain(roll_output, -MAX_OUTPUT, MAX_OUTPUT);
+        pitch_output = constrain(pitch_output, -MAX_OUTPUT, MAX_OUTPUT);
     }
 
-    void getMotorMixing(int throttle, int roll_output,
+    void getMotorMixing(int throttle, int roll_output, int pitch_output,
                         int &front_right, int &back_right, int &back_left, int &front_left)
     {
-        // X configuration mixing for roll only
-        front_right = throttle - roll_output;
-        back_right = throttle - roll_output;
-        back_left = throttle + roll_output;
-        front_left = throttle + roll_output;
+        // X configuration mixing for roll and pitch
+        front_right = throttle - roll_output + pitch_output;
+        back_right = throttle - roll_output - pitch_output;
+        back_left = throttle + roll_output - pitch_output;
+        front_left = throttle + roll_output + pitch_output;
 
         // Ensure motor values are within valid range
         front_right = constrain(front_right, 1000, 2000);
@@ -99,18 +107,24 @@ public:
     }
 
     // Method to adjust PID constants at runtime
-    void adjustPIDConstants(float Kp_r, float Ki_r, float Kd_r)
+    void adjustPIDConstants(float Kp_r, float Ki_r, float Kd_r, float Kp_p, float Ki_p, float Kd_p)
     {
         Kp_roll = Kp_r;
         Ki_roll = Ki_r;
         Kd_roll = Kd_r;
+        Kp_pitch = Kp_p;
+        Ki_pitch = Ki_p;
+        Kd_pitch = Kd_p;
     }
 
-    void getPIDConstants(float &Kp_r, float &Ki_r, float &Kd_r)
+    void getPIDConstants(float &Kp_r, float &Ki_r, float &Kd_r, float &Kp_p, float &Ki_p, float &Kd_p)
     {
         Kp_r = Kp_roll;
         Ki_r = Ki_roll;
         Kd_r = Kd_roll;
+        Kp_p = Kp_pitch;
+        Ki_p = Ki_pitch;
+        Kd_p = Kd_pitch;
     }
 };
 
