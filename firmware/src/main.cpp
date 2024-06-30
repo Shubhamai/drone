@@ -65,7 +65,7 @@ void setup(void)
 
     DEBUG_SERIAL.begin(SERIAL_BAUD_RATE);
     TRANSMITTER_SERIAL.setTimeout(2);
-    TRANSMITTER_SERIAL.begin(1000000);
+    TRANSMITTER_SERIAL.begin(2000000);
 
     Wire.begin();
     Wire.setClock(I2C_CLOCK_SPEED);
@@ -193,7 +193,7 @@ void loop()
 
     int roll_output;
     int pitch_output;
-    float dt = 0.01; // Assume 100Hz loop frequency, adjust if different
+    float dt = 0.0142; // Assume 100Hz loop frequency, adjust if different
     pidController.computePID(filterData, dt, roll_output, pitch_output);
 
     float Kp_r, Ki_r, Kd_r, Kp_p, Ki_p, Kd_p;
@@ -240,8 +240,8 @@ void loop()
     //////////////////////////////////////////////////
 
     const uint32_t end_loop = millis();
-    // DEBUG_SERIAL.print("Loop time: ");
-    // DEBUG_SERIAL.println(end_loop - start_loop);
+    DEBUG_SERIAL.print("Loop time: ");
+    DEBUG_SERIAL.println(end_loop - start_loop);
     // if (end_loop - start_loop > 10)
     // {
     //     DEBUG_SERIAL.print("Loop time: ");

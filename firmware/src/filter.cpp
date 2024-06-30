@@ -1,7 +1,7 @@
 #include "filter.h"
-#include <Adafruit_Sensor.h>  // Ensure sensor constants are available
+#include <Adafruit_Sensor.h>
 
-FilterManager::FilterManager() : timestamp(0) {}
+FilterManager::FilterManager() : timestamp(0), filteredRoll(0), filteredPitch(0), filteredYaw(0) {}
 
 void FilterManager::initFilter() {
     filter.begin(updateRateHz);
@@ -15,6 +15,7 @@ FilterData FilterManager::processData(IMUData data) {
     while ((millis() - timestamp) < (1000 / updateRateHz)) {
         // Wait until the update rate interval has passed
     }
+    float dt = (millis() - timestamp) / 1000.0f;
     timestamp = millis();
 
     // Convert gyroscope from radians/s to degrees/s
@@ -31,14 +32,19 @@ FilterData FilterManager::processData(IMUData data) {
     pitch = filter.getPitch();
     heading = filter.getYaw();
 
+    // Apply complementary filter
+    filteredRoll = alpha * (filteredRoll + gx * dt) + (1 - alpha) * roll;
+    filteredPitch = alpha * (filteredPitch + gy * dt) + (1 - alpha) * pitch;
+    filteredYaw = alpha * (filteredYaw + gz * dt) + (1 - alpha) * heading;
+
     // Get quaternion values
     float qw, qx, qy, qz;
     filter.getQuaternion(&qw, &qx, &qy, &qz);
 
     // NOTE: The IMU is mounted sideways, so roll and pitch are swapped
-    filteredData.roll = pitch;
-    filteredData.pitch = roll;
-    filteredData.yaw = heading;
+    filteredData.roll = filteredPitch;
+    filteredData.pitch = filteredRoll;
+    filteredData.yaw = filteredYaw;
 
     filteredData.quaternion[0] = qw;
     filteredData.quaternion[1] = qx;

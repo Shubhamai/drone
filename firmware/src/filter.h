@@ -1,3 +1,4 @@
+// filter.h
 #ifndef FILTER_MANAGER_H
 #define FILTER_MANAGER_H
 
@@ -15,6 +16,8 @@ private:
     Adafruit_NXPSensorFusion filter;
     uint32_t timestamp;
     const int updateRateHz = FILTER_UPDATE_HERTZ;
+    const float alpha = 0.98; // Complementary filter coefficient
+    float filteredRoll, filteredPitch, filteredYaw;
 
 public:
     FilterManager();

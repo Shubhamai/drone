@@ -1,6 +1,6 @@
 use crate::data::ReceivedData;
 use crossbeam_channel::{Receiver, Sender};
-use eframe::egui::{self, RichText};
+use eframe::egui::{self, Key, RichText};
 use epaint::Color32;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -89,6 +89,35 @@ impl CommandsView {
                 {
                     self.motor_enabled = !self.motor_enabled;
                 }
+
+                ctx.input(|i| {
+                    if i.key_down(Key::Enter) {
+                        self.motor_enabled = false;
+                        // self.ui_to_drone_tx
+                        //     .send("command->abort".to_string())
+                        //     .expect("Failed to send abort message");
+                    }
+                });
+
+                // esc to abort
+                ctx.input(|i| {
+                    if i.key_down(Key::Escape) {
+                        self.ui_to_drone_tx
+                            .send("command->abort".to_string())
+                            .expect("Failed to send abort message");
+                    }
+                });
+
+                // shift + r to reboot
+                ctx.input(|i| {
+                    if i.modifiers.shift && i.key_down(Key::R) {
+                        self.motor_enabled = false;
+                        self.ui_to_drone_tx
+                            .send("command->reboot".to_string())
+                            .expect("Failed to send reboot message");
+                    }
+                });
+                
 
                 if ui
                     .button(RichText::new("Master Abort").size(32.).color(Color32::RED))

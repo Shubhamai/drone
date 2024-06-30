@@ -19,7 +19,7 @@ private:
     float desired_roll, desired_pitch;
 
     // Output limits
-    const float MAX_OUTPUT = 250; // Adjust as needed
+    const float MAX_OUTPUT = 350; // Adjust as needed
 
     // Anti-windup parameters
     const float MAX_INTEGRAL = 100;           // Adjust based on your system
@@ -70,7 +70,7 @@ public:
     void updateDesiredAngle(int roll, int pitch)
     {
         // Map RC input to desired angle with deadband
-        int deadband = 50; // Adjust as needed
+        int deadband = 1; // Adjust as needed
         desired_roll = (abs(roll - 1500) > deadband) ? map(roll, 1000, 2000, -20, 20) : 0;
         desired_pitch = (abs(pitch - 1500) > deadband) ? map(pitch, 1000, 2000, -20, 20) : 0;
     }

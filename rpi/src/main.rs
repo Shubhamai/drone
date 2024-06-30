@@ -38,7 +38,7 @@ async fn handle_connection(stream: TcpStream) {
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
     let tty_path = "/dev/ttyS0";
-    let serial = match tokio_serial::new(tty_path, 1_000_000).open_native_async() {
+    let serial = match tokio_serial::new(tty_path, 2_000_000).open_native_async() {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to open serial port: {}", e);
@@ -144,3 +144,7 @@ async fn handle_connection(stream: TcpStream) {
 
     println!("Connection handler finished");
 }
+
+// sudo apt install -y gcc-aarch64-linux-gnu # local machine
+// cargo build --release --target aarch64-unknown-linux-gnu
+// scp /home/elden/Documents/projects/jet/rpi/target/aarch64-unknown-linux-gnu/release/rpi elden@192.168.1.107:~/Documents/jet/rpi

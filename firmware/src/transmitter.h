@@ -50,7 +50,7 @@ class TransmitterController
 {
 private:
     unsigned long lastTransmitTime;
-    const unsigned long transmitInterval = 20; // Print every 100ms
+    const unsigned long transmitInterval = 5; // Print every 100ms
 
     void sendData(TransmitterData data);
 

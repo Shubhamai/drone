@@ -29,7 +29,7 @@ const int MAX_THROTTLE = 1700;
 
 const float BAROMETER_CALIBRATION_ALTITUDE = 540.0; // meters
 
-const int FILTER_UPDATE_HERTZ = 200; // Hz
+const int FILTER_UPDATE_HERTZ = 142; // Hz
 
 ///////////////////////////////////////
 
